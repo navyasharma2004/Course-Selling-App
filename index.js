@@ -8,6 +8,8 @@ const {courseRouter} = require("./routes/course");
 const {adminRouter} = require("./routes/admin");
 const app = express();
 app.use(express.json());
+const cors = require("cors");
+app.use(cors());
 app.use("/user", userRouter);
 app.use("/admin", adminRouter);
 app.use("/course", courseRouter);
