@@ -60,14 +60,15 @@ adminRouter.post("/signin", async function(req, res) {
 })
 adminRouter.post("/course",adminMiddleware, async function(req, res){
     const adminId = req.userId;
-    const {title, description, price, imageLink, creatorId} = req.body;
+    const {title, description, price, imageLink, videos} = req.body;
 
     const course =await courseModel.create({
         title: title,
         description: description,
         price: price,
         imageLink: imageLink,
-        creatorId: adminId
+        creatorId: adminId,
+        videos: videos || []
     })
     res.json({
         message: "course created successfully",
@@ -76,7 +77,7 @@ adminRouter.post("/course",adminMiddleware, async function(req, res){
 })
 adminRouter.put("/course/:courseId",adminMiddleware, async function(req, res){
    const courseId = req.params.courseId;
-   const {title, description, price, imageLink} = req.body;
+   const {title, description, price, imageLink, videos} = req.body;
 
    const course = await courseModel.updateOne({
     _id: courseId
@@ -84,7 +85,8 @@ adminRouter.put("/course/:courseId",adminMiddleware, async function(req, res){
     title: title,
     description: description,
     price: price,
-    imageLink: imageLink
+    imageLink: imageLink,
+    videos: videos || []
    })
    res.json({
        message: "Course updated successfully",

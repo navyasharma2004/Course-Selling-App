@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
 
@@ -27,15 +27,44 @@ export default function UserDashboard() {
 
         {!loading && purchases.length === 0 && (
           <p className="py-8 font-sans text-ink/60">
-            You haven't purchased anything yet — browse the catalogue to get started.
+            You haven't purchased anything yet —{" "}
+            <Link to="/" className="text-indigo underline underline-offset-4">
+              browse the catalogue
+            </Link>{" "}
+            to get started.
           </p>
         )}
 
-        {purchases.map((p) => (
-          <div key={p._id} className="border-b border-line py-4 font-sans text-sm text-ink/80">
-            Course ID: {p.courseId}
-          </div>
-        ))}
+        {purchases.map((p) => {
+          const course = p.courseId; // populated by the backend
+          if (!course) return null;
+          return (
+            <div
+              key={p._id}
+              className="border-b border-line py-5 flex items-center gap-5"
+            >
+              {course.imageLink && (
+                <img
+                  src={course.imageLink}
+                  alt={course.title}
+                  className="w-20 h-20 object-cover border border-line shrink-0"
+                />
+              )}
+              <div className="flex-1">
+                <p className="font-serif text-lg text-ink">{course.title}</p>
+                <p className="font-sans text-xs text-ink/50 mt-1">
+                  {course.videos?.length || 0} lesson{course.videos?.length === 1 ? "" : "s"}
+                </p>
+              </div>
+              <Link
+                to={`/learn/${course._id}`}
+                className="font-sans text-sm border border-ink px-4 py-2 hover:bg-ink hover:text-paper transition-colors shrink-0"
+              >
+                Continue learning
+              </Link>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

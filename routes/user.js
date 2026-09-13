@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const {JWT_USER_SECRET} = require("../config");
 const {z} = require("zod");
 const {userModel,purchaseModel} = require("../db");
-const {userMiddleware} = require("../Middleware/user.js");
+const {userMiddleware} = require("../Middleware/user");
 const userRouter = express.Router();
 
 userRouter.post('/signup', async function(req,res){
@@ -59,12 +59,12 @@ userRouter.post('/signin', async function(req,res){
     });
 }
 });
-console.log("userMiddleware:", userMiddleware);
+
 userRouter.get('/purchases', userMiddleware, async function(req,res){
      const userId = req.userId;
      const purchases = await purchaseModel.find({
         userId: userId
-    });
+    }).populate("courseId");
     res.json({
         purchases: purchases
     });

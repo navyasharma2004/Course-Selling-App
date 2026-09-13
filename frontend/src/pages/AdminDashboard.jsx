@@ -3,14 +3,17 @@ import { Navigate } from "react-router-dom";
 import api from "../api";
 import { useAuth } from "../context/AuthContext";
 import Banner from "../components/Banner";
+import { extractYoutubeId } from "../utils/youtube";
 
 const emptyForm = { title: "", description: "", price: "", imageLink: "" };
+const emptyVideo = { title: "", youtubeUrl: "" };
 
 export default function AdminDashboard() {
   const { adminToken } = useAuth();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
+  const [videos, setVideos] = useState([]); // [{ title, youtubeUrl }]
   const [editingId, setEditingId] = useState(null); // null = creating new
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -35,6 +38,22 @@ export default function AdminDashboard() {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
 
+  function updateVideo(index, field) {
+    return (e) => {
+      const next = [...videos];
+      next[index] = { ...next[index], [field]: e.target.value };
+      setVideos(next);
+    };
+  }
+
+  function addVideoRow() {
+    setVideos((v) => [...v, { ...emptyVideo }]);
+  }
+
+  function removeVideoRow(index) {
+    setVideos((v) => v.filter((_, i) => i !== index));
+  }
+
   function startEdit(course) {
     setEditingId(course._id);
     setForm({
@@ -43,20 +62,34 @@ export default function AdminDashboard() {
       price: course.price ?? "",
       imageLink: course.imageLink || "",
     });
+    setVideos(
+      (course.videos || []).map((v) => ({ title: v.title, youtubeUrl: v.youtubeId }))
+    );
     setSuccess("");
     setError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function cancelEdit() {
     setEditingId(null);
     setForm(emptyForm);
+    setVideos([]);
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setSuccess("");
-    const payload = { ...form, price: Number(form.price) };
+
+    const cleanVideos = videos
+      .filter((v) => v.title.trim() && v.youtubeUrl.trim())
+      .map((v, i) => ({
+        title: v.title.trim(),
+        youtubeId: extractYoutubeId(v.youtubeUrl),
+        order: i,
+      }));
+
+    const payload = { ...form, price: Number(form.price), videos: cleanVideos };
 
     try {
       if (editingId) {
@@ -71,6 +104,7 @@ export default function AdminDashboard() {
         setSuccess("Course created.");
       }
       setForm(emptyForm);
+      setVideos([]);
       setEditingId(null);
       loadCourses();
     } catch (err) {
@@ -83,7 +117,7 @@ export default function AdminDashboard() {
       <p className="font-sans text-xs tracking-wide text-gold mb-2">Admin panel</p>
       <h1 className="font-serif text-4xl text-ink">Manage courses</h1>
 
-      <div className="mt-10 grid md:grid-cols-[1fr_1.3fr] gap-12">
+      <div className="mt-10 grid md:grid-cols-[1.2fr_1fr] gap-12">
         {/* Form */}
         <div>
           <h2 className="font-serif text-xl text-ink mb-4">
@@ -106,7 +140,7 @@ export default function AdminDashboard() {
               placeholder="Description"
               value={form.description}
               onChange={update("description")}
-              rows={4}
+              rows={3}
               className="w-full border border-line bg-transparent px-3 py-2 font-sans text-sm focus:outline-none focus:border-ink resize-none"
             />
             <input
@@ -124,6 +158,55 @@ export default function AdminDashboard() {
               onChange={update("imageLink")}
               className="w-full border border-line bg-transparent px-3 py-2 font-sans text-sm focus:outline-none focus:border-ink"
             />
+
+            {/* Video lessons */}
+            <div className="border-t border-line pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-serif text-base text-ink">Video lessons</p>
+                <button
+                  type="button"
+                  onClick={addVideoRow}
+                  className="font-sans text-xs text-indigo hover:text-indigo-dark underline underline-offset-4"
+                >
+                  + Add video
+                </button>
+              </div>
+
+              {videos.length === 0 && (
+                <p className="font-sans text-xs text-ink/50 mb-2">
+                  No videos added yet — students will only see the description until you add some.
+                </p>
+              )}
+
+              <div className="space-y-3">
+                {videos.map((v, i) => (
+                  <div key={i} className="flex gap-2 items-start">
+                    <span className="font-sans text-xs text-ink/40 mt-2.5 w-4">{i + 1}.</span>
+                    <div className="flex-1 space-y-2">
+                      <input
+                        placeholder="Lesson title"
+                        value={v.title}
+                        onChange={updateVideo(i, "title")}
+                        className="w-full border border-line bg-transparent px-3 py-1.5 font-sans text-sm focus:outline-none focus:border-ink"
+                      />
+                      <input
+                        placeholder="YouTube URL (or unlisted video link)"
+                        value={v.youtubeUrl}
+                        onChange={updateVideo(i, "youtubeUrl")}
+                        className="w-full border border-line bg-transparent px-3 py-1.5 font-sans text-sm focus:outline-none focus:border-ink"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeVideoRow(i)}
+                      className="font-sans text-xs text-red-800/70 hover:text-red-800 mt-2.5"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <div className="flex gap-3">
               <button
@@ -165,7 +248,10 @@ export default function AdminDashboard() {
               >
                 <div>
                   <p className="font-serif text-base text-ink">{course.title}</p>
-                  <p className="font-sans text-xs text-ink/60">₹{course.price}</p>
+                  <p className="font-sans text-xs text-ink/60">
+                    ₹{course.price} · {course.videos?.length || 0} lesson
+                    {course.videos?.length === 1 ? "" : "s"}
+                  </p>
                 </div>
                 <button
                   onClick={() => startEdit(course)}

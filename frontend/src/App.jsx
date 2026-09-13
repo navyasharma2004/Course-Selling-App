@@ -6,6 +6,7 @@ import UserAuth from "./pages/UserAuth";
 import AdminAuth from "./pages/AdminAuth";
 import UserDashboard from "./pages/UserDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import CoursePlayer from "./pages/CoursePlayer";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<UserAuth />} />
             <Route path="/my-courses" element={<UserDashboard />} />
+            <Route path="/learn/:courseId" element={<CoursePlayer />} />
             <Route path="/admin/login" element={<AdminAuth />} />
             <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
